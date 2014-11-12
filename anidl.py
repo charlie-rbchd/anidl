@@ -82,9 +82,12 @@ class MainWindow(wx.Frame):
     def FetchData(self):
         self.checkList.Clear()
         self.checkListItems = scrape.fetch(self.userConfig["anilistUsername"])
-        self.checkList.InsertItems([entry[0] for entry in self.checkListItems], 0)
+
+        if (len(self.checkListItems) != 0):
+            self.checkList.InsertItems([entry[0] for entry in self.checkListItems], 0)
+            self.SelectAll()
+
         self.checkList.SetFocus()
-        self.SelectAll()
 
     def OnRefresh(self, evt):
         self.FetchData()
