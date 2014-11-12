@@ -47,10 +47,11 @@ def __parse_nyaa(anilist_entry, nyaa_html):
         # TODO: Show entries of ALL undownloaded+unwatched episodes?
 
         url = entry.find("td", class_="tlistdownload").a["href"]
-        title = entry.find("td", class_="tlistname").a.get_text()
 
+        title = entry.find("td", class_="tlistname").a.get_text()
         title_no_tags = re.sub(r"(\[.*?\]|\(.*?\))", "", title)
-        if str(anilist_entry[1]) in title_no_tags and not download.already(anilist_entry):
+
+        if re.search(r"\s0*%i(v[0-9]+)?\s" % anilist_entry[1], title_no_tags) != None and not download.already(anilist_entry):
             # Formatting -- for humans.
             title = re.sub("_", " ", title) # Some titles use underscores instead of spaces.
             title = re.sub(r"\[[a-zA-F0-9]{8}\]", "", title) # Remove identifier tags.
