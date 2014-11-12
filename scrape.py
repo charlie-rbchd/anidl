@@ -50,11 +50,11 @@ def __parse_nyaa(anilist_entry, nyaa_html, blacklisted_qualities, look_ahead):
 
     entries = []
     for entry in soup.find_all("tr", class_="tlistrow"):
-        # TODO: Show entries of ALL undownloaded+unwatched episodes?
         url = entry.find("td", class_="tlistdownload").a["href"]
 
         title = entry.find("td", class_="tlistname").a.get_text()
         title = re.sub("_", " ", title) # Some titles use underscores instead of spaces.
+        title = re.sub(pattern_id_tags, "", title) # Remove identifier tags.
         title_no_tags = re.sub(pattern_tags, "", title)
 
         if not download.already(anilist_entry):
@@ -71,13 +71,13 @@ def __parse_nyaa(anilist_entry, nyaa_html, blacklisted_qualities, look_ahead):
                     break
 
             if legit:
-                # Formatting -- for humans.
-                title = re.sub(pattern_id_tags, "", title) # Remove identifier tags.
                 entries.append((title, url, anilist_entry[0], anilist_entry[1]))
     return entries
 
 def fetch(anilist_username, blacklisted_qualities, look_ahead):
+    download.open()
     entries = []
     for entry in __parse_anilist(__fetch_anilist(anilist_username)):
         entries.extend(__parse_nyaa(entry, __fetch_nyaa(entry), blacklisted_qualities, look_ahead))
+    download.close()
     return entries

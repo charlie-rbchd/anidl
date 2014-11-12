@@ -3,13 +3,13 @@ import shelve
 import scrape
 import download
 
+# TODO: Add a user-fillable dictionary of replacement titles for more precise querying?
 class MainWindow(wx.Frame):
     def __init__(self, parent, title):
         wx.Frame.__init__(self, parent, title=title, size=(400, 525))
 
-        # Open database
+        # Open config file
         self.userConfig = shelve.open("config", writeback=True)
-        download.open()
 
         # Elements creation
         self.SetBackgroundColour('white')
@@ -130,9 +130,11 @@ class MainWindow(wx.Frame):
         self.FetchData()
 
     def OnDownload(self, evt):
+        download.open()
         for i in range(len(self.checkListItems)):
             if (self.checkList.IsChecked(i)):
                 download.torrent(self.checkListItems[i], self.dirPicker.GetPath())
+        download.close()
 
         self.Close(True)
 
@@ -165,8 +167,6 @@ class MainWindow(wx.Frame):
 
     def OnClose(self, evt):
         self.userConfig.close()
-        download.close()
-
         self.Destroy()
 
 app = wx.App(False)

@@ -22,10 +22,9 @@ def already(entry):
     return db_cursor.fetchone() != None
 
 def torrent(entry, dir):
-    path = os.path.join(dir, "%s.torrent" % entry[0])
-    urllib.urlretrieve(entry[1], path)
+    urllib.urlretrieve(entry[1], os.path.join(dir, "%s.torrent" % entry[0]))
     db_cursor.execute("INSERT INTO animes (title, progress) VALUES (?, ?)", (entry[2], entry[3]))
-    db_connect.commit()
 
 def close():
+    db_connect.commit()
     db_connect.close()
