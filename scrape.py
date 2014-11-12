@@ -41,10 +41,10 @@ def __fetch_nyaa(anilist_entry):
     browser.open("http://www.nyaa.se/?page=search&cats=1_37&filter=2&term=%s" % url_title)
     return browser.response().read()
 
-def __parse_nyaa(anilist_entry, nyaa_html, blacklisted_qualities):
+def __parse_nyaa(anilist_entry, nyaa_html, blacklisted_qualities, look_ahead):
     soup = BeautifulSoup(nyaa_html, "html5lib")
 
-    pattern_title = re.compile("\s0*%i(v[0-9]+)?\s" % anilist_entry[1])
+    pattern_title = [re.compile("\s0*%i(v[0-9]+)?\s" % (anilist_entry[1] + i)) for i in range(look_ahead)]
     pattern_tags = re.compile("(\[.*?\]|\(.*?\))")
     pattern_id_tags = re.compile("\[[a-zA-F0-9]{8}\]")
 
@@ -57,8 +57,14 @@ def __parse_nyaa(anilist_entry, nyaa_html, blacklisted_qualities):
         title = re.sub("_", " ", title) # Some titles use underscores instead of spaces.
         title_no_tags = re.sub(pattern_tags, "", title)
 
-        if re.search(pattern_title, title_no_tags) != None and not download.already(anilist_entry):
-            legit = True
+        if not download.already(anilist_entry):
+            legit = False
+
+            for p in pattern_title:
+                if re.search(p, title_no_tags) != None:
+                    legit = True
+                    break
+
             for quality in blacklisted_qualities:
                 if quality in title:
                     legit = False
@@ -70,8 +76,8 @@ def __parse_nyaa(anilist_entry, nyaa_html, blacklisted_qualities):
                 entries.append((title, url, anilist_entry[0], anilist_entry[1]))
     return entries
 
-def fetch(anilist_username, blacklisted_qualities):
+def fetch(anilist_username, blacklisted_qualities, look_ahead):
     entries = []
     for entry in __parse_anilist(__fetch_anilist(anilist_username)):
-        entries.extend(__parse_nyaa(entry, __fetch_nyaa(entry), blacklisted_qualities))
+        entries.extend(__parse_nyaa(entry, __fetch_nyaa(entry), blacklisted_qualities, look_ahead))
     return entries

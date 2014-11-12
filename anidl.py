@@ -35,6 +35,10 @@ class MainWindow(wx.Frame):
             for i in range(len(self.listBoxItems)):
                 self.listBox.SetSelection(i)
 
+        comboBoxLabel = wx.StaticText(self, -1, "Episodes look-ahead")
+        self.comboBox = wx.ComboBox(self, -1, choices=["1", "2", "3"], style=wx.CB_READONLY)
+        self.comboBox.SetSelection(self.userConfig["selectedComboBoxItem"] if "selectedComboBoxItem" in self.userConfig else 0)
+
         self.checkListToggle = wx.CheckBox(self, -1, "Select/Deselect all")
         self.checkListToggle.SetValue(True)
         self.checkList = wx.CheckListBox(self, -1)
@@ -64,6 +68,7 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_TEXT, self.OnUsernameChange, self.listUrlTextInput)
         self.Bind(wx.EVT_DIRPICKER_CHANGED, self.OnDownloadPathChange, self.dirPicker)
         self.Bind(wx.EVT_LISTBOX, self.OnQualityChange, self.listBox)
+        self.Bind(wx.EVT_COMBOBOX, self.OnEpisodeLookAheadChange, self.comboBox)
         self.Bind(wx.EVT_CLOSE, self.OnClose, self)
 
         self.Bind(wx.EVT_MENU, self.OnRefresh, refreshMenuItem)
@@ -78,8 +83,16 @@ class MainWindow(wx.Frame):
         sizer.Add(self.dirPicker, 0, wx.EXPAND | wx.ALL | wx.ALIGN_LEFT, 5)
         sizer.Add(listUrlLabel, 0, wx.TOP | wx.LEFT | wx.RIGHT | wx.ALIGN_LEFT, 5)
         sizer.Add(self.listUrlTextInput, 0, wx.EXPAND | wx.ALL | wx.ALIGN_LEFT, 5)
-        sizer.Add(listBoxLabel, 0, wx.TOP | wx.LEFT | wx.RIGHT | wx.ALIGN_LEFT, 5)
-        sizer.Add(self.listBox, 0, wx.ALL | wx.ALIGN_LEFT, 5)
+
+        filterLabelsSizer = wx.BoxSizer(wx.HORIZONTAL)
+        filterLabelsSizer.Add(listBoxLabel, 0, wx.TOP | wx.LEFT | wx.RIGHT | wx.ALIGN_LEFT, 5)
+        filterLabelsSizer.Add(comboBoxLabel, 0, wx.TOP | wx.ALIGN_LEFT, 5)
+        filterControlsSizer = wx.BoxSizer(wx.HORIZONTAL)
+        filterControlsSizer.Add(self.listBox, 0, wx.ALL | wx.ALIGN_LEFT, 5)
+        filterControlsSizer.Add(self.comboBox, 0, wx.ALL | wx.ALIGN_LEFT, 5)
+        sizer.Add(filterLabelsSizer, 0)
+        sizer.Add(filterControlsSizer, 0)
+
         sizer.AddSpacer(15)
         sizer.Add(self.checkListToggle, 0, wx.ALL, 5)
         sizer.Add(self.checkList, 0, wx.EXPAND | wx.ALL | wx.ALIGN_LEFT)
@@ -106,7 +119,8 @@ class MainWindow(wx.Frame):
 
         unselectedQualities = [self.listBoxItems[i] for i in range(len(self.listBoxItems))
                                if i not in self.listBox.GetSelections()]
-        self.checkListItems = scrape.fetch(self.listUrlTextInput.GetLineText(0), unselectedQualities)
+        self.checkListItems = scrape.fetch(self.listUrlTextInput.GetLineText(0), unselectedQualities,
+                                           int(self.comboBox.GetSelection()) + 1)
 
         if (len(self.checkListItems) != 0):
             self.checkList.InsertItems([entry[0] for entry in self.checkListItems], 0)
@@ -129,6 +143,9 @@ class MainWindow(wx.Frame):
             self.SelectAll()
         else:
             self.DeselectAll()
+
+    def OnEpisodeLookAheadChange(self, evt):
+        self.userConfig["selectedComboBoxItem"] = self.comboBox.GetSelection()
 
     def OnQualityChange(self, evt):
         self.userConfig["selectedListBoxItems"] = self.listBox.GetSelections()
