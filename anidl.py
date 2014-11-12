@@ -5,7 +5,7 @@ import download
 
 class MainWindow(wx.Frame):
     def __init__(self, parent, title):
-        wx.Frame.__init__(self, parent, title=title, size=(400, 550))
+        wx.Frame.__init__(self, parent, title=title, size=(400, 525))
 
         # Open database
         self.userConfig = shelve.open("config", writeback=True)
@@ -13,8 +13,6 @@ class MainWindow(wx.Frame):
 
         # Elements creation
         self.SetBackgroundColour('white')
-        self.CreateStatusBar()
-        # TODO: Status bar messages...
 
         dirPickerLabel = wx.StaticText(self, -1, "Download directory")
         dirPickerDefaultValue = self.userConfig["downloadDir"] if "downloadDir" in self.userConfig else ""
@@ -41,7 +39,7 @@ class MainWindow(wx.Frame):
 
         self.checkListToggle = wx.CheckBox(self, -1, "Select/Deselect all")
         self.checkListToggle.SetValue(True)
-        self.checkList = wx.CheckListBox(self, -1)
+        self.checkList = wx.CheckListBox(self, -1, choices=[""]*10)
 
         downloadButton = wx.Button(self, -1, "Download my chinese cartoons")
 
