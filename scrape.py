@@ -22,11 +22,13 @@ def __fetch_anilist(anilist_username):
 def __parse_anilist(anilist_html):
     soup = BeautifulSoup(anilist_html, "html5lib")
 
+    pattern_ascii = re.compile("[^\x00-\x7F]+")
+
     entries = []
     for entry in soup.find(id="Watching").find_all("tr", class_="rtitle"):
         parts = entry.find_all("td")
 
-        title = re.sub(r"[^\x00-\x7F]+", " ", parts[0].a.get_text()).strip() # Replace non-ASCII characters with spaces
+        title = re.sub(pattern_ascii, " ", parts[0].a.get_text()).strip() # Replace non-ASCII characters with spaces
         progress = int(parts[2].span.get_text()) + 1
 
         entries.append((title, progress))
@@ -42,19 +44,24 @@ def __fetch_nyaa(anilist_entry):
 def __parse_nyaa(anilist_entry, nyaa_html):
     soup = BeautifulSoup(nyaa_html, "html5lib")
 
+    pattern_title = re.compile("\s0*%i(v[0-9]+)?\s" % anilist_entry[1])
+    pattern_tags = re.compile("(\[.*?\]|\(.*?\))")
+    pattern_id_tags = re.compile("\[[a-zA-F0-9]{8}\]")
+
     entries = []
     for entry in soup.find_all("tr", class_=["trusted", "aplus"]):
         # TODO: Show entries of ALL undownloaded+unwatched episodes?
-
         url = entry.find("td", class_="tlistdownload").a["href"]
 
         title = entry.find("td", class_="tlistname").a.get_text()
-        title_no_tags = re.sub(r"(\[.*?\]|\(.*?\))", "", title)
+        title_no_tags = re.sub(pattern_tags, "", title)
 
-        if re.search(r"\s0*%i(v[0-9]+)?\s" % anilist_entry[1], title_no_tags) != None and not download.already(anilist_entry):
+        if re.search(pattern_title, title_no_tags) != None and \
+            '480p' not in title and not download.already(anilist_entry):
+
             # Formatting -- for humans.
             title = re.sub("_", " ", title) # Some titles use underscores instead of spaces.
-            title = re.sub(r"\[[a-zA-F0-9]{8}\]", "", title) # Remove identifier tags.
+            title = re.sub(pattern_id_tags, "", title) # Remove identifier tags.
 
             entries.append((title, url, anilist_entry[0], anilist_entry[1]))
     return entries
