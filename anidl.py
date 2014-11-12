@@ -5,7 +5,7 @@ import download
 
 class MainWindow(wx.Frame):
     def __init__(self, parent, title):
-        wx.Frame.__init__(self, parent, title=title, size=(365, 465))
+        wx.Frame.__init__(self, parent, title=title, size=(400, 550))
 
         # Open database
         self.userConfig = shelve.open("config", writeback=True)
@@ -14,12 +14,26 @@ class MainWindow(wx.Frame):
         # Elements creation
         self.SetBackgroundColour('white')
         self.CreateStatusBar()
+        # TODO: Status bar messages...
 
         dirPickerLabel = wx.StaticText(self, -1, "Download directory")
-        self.dirPicker = wx.DirPickerCtrl(self, -1, self.userConfig["downloadDir"] if "downloadDir" in self.userConfig else "", "Select your download directory")
+        dirPickerDefaultValue = self.userConfig["downloadDir"] if "downloadDir" in self.userConfig else ""
+        self.dirPicker = wx.DirPickerCtrl(self, -1, dirPickerDefaultValue, "Select your download directory")
 
         listUrlLabel = wx.StaticText(self, -1, "Anilist username")
-        self.listUrlTextInput = wx.TextCtrl(self, -1, self.userConfig["anilistUsername"] if "anilistUsername" in self.userConfig else "")
+        listUrlTextInputDefaultValue = self.userConfig["anilistUsername"] if "anilistUsername" in self.userConfig else ""
+        self.listUrlTextInput = wx.TextCtrl(self, -1, listUrlTextInputDefaultValue)
+
+        listBoxLabel = wx.StaticText(self, -1, "Target qualities")
+        self.listBoxItems = ["480p", "720p", "1080p"]
+        self.listBox = wx.ListBox(self, -1, choices=self.listBoxItems, style=wx.LB_MULTIPLE)
+
+        if "selectedListBoxItems" in self.userConfig:
+            for item in self.userConfig["selectedListBoxItems"]:
+                self.listBox.SetSelection(item)
+        else:
+            for i in range(len(self.listBoxItems)):
+                self.listBox.SetSelection(i)
 
         self.checkListToggle = wx.CheckBox(self, -1, "Select/Deselect all")
         self.checkListToggle.SetValue(True)
@@ -31,7 +45,8 @@ class MainWindow(wx.Frame):
         fileMenu = wx.Menu()
         refreshMenuItem = fileMenu.Append(-1, "Refresh\tCtrl+R")
         fileMenu.AppendSeparator()
-        downloadMenuItem = fileMenu.Append(-1, "Download and Exit\tCtrl+Shift+D", " Download selected cartoons and terminate the program.")
+        downloadMenuItem = fileMenu.Append(-1, "Download and Exit\tCtrl+Shift+D",
+                                           "Download selected cartoons and terminate the program.")
         exitMenuItem = fileMenu.Append(wx.ID_EXIT, "Exit without downloading\tCtrl+W", " Terminate the program.")
 
         editMenu = wx.Menu()
@@ -48,6 +63,7 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_CHECKBOX, self.OnToggleSelection, self.checkListToggle)
         self.Bind(wx.EVT_TEXT, self.OnUsernameChange, self.listUrlTextInput)
         self.Bind(wx.EVT_DIRPICKER_CHANGED, self.OnDownloadPathChange, self.dirPicker)
+        self.Bind(wx.EVT_LISTBOX, self.OnQualityChange, self.listBox)
         self.Bind(wx.EVT_CLOSE, self.OnClose, self)
 
         self.Bind(wx.EVT_MENU, self.OnRefresh, refreshMenuItem)
@@ -62,6 +78,8 @@ class MainWindow(wx.Frame):
         sizer.Add(self.dirPicker, 0, wx.EXPAND | wx.ALL | wx.ALIGN_LEFT, 5)
         sizer.Add(listUrlLabel, 0, wx.TOP | wx.LEFT | wx.RIGHT | wx.ALIGN_LEFT, 5)
         sizer.Add(self.listUrlTextInput, 0, wx.EXPAND | wx.ALL | wx.ALIGN_LEFT, 5)
+        sizer.Add(listBoxLabel, 0, wx.TOP | wx.LEFT | wx.RIGHT | wx.ALIGN_LEFT, 5)
+        sizer.Add(self.listBox, 0, wx.ALL | wx.ALIGN_LEFT, 5)
         sizer.AddSpacer(15)
         sizer.Add(self.checkListToggle, 0, wx.ALL, 5)
         sizer.Add(self.checkList, 0, wx.EXPAND | wx.ALL | wx.ALIGN_LEFT)
@@ -72,16 +90,23 @@ class MainWindow(wx.Frame):
         self.FetchData()
 
     def SelectAll(self):
+        self.checkListToggle.SetValue(True)
+
         for i in range(len(self.checkListItems)):
             self.checkList.Check(i)
 
     def DeselectAll(self):
+        self.checkListToggle.SetValue(False)
+
         for i in range(len(self.checkListItems)):
             self.checkList.Check(i, False)
 
     def FetchData(self):
         self.checkList.Clear()
-        self.checkListItems = scrape.fetch(self.userConfig["anilistUsername"])
+
+        unselectedQualities = [self.listBoxItems[i] for i in range(len(self.listBoxItems))
+                               if i not in self.listBox.GetSelections()]
+        self.checkListItems = scrape.fetch(self.listUrlTextInput.GetLineText(0), unselectedQualities)
 
         if (len(self.checkListItems) != 0):
             self.checkList.InsertItems([entry[0] for entry in self.checkListItems], 0)
@@ -95,7 +120,7 @@ class MainWindow(wx.Frame):
     def OnDownload(self, evt):
         for i in range(len(self.checkListItems)):
             if (self.checkList.IsChecked(i)):
-                download.torrent(self.checkListItems[i], self.userConfig["downloadDir"])
+                download.torrent(self.checkListItems[i], self.dirPicker.GetPath())
 
         self.Close(True)
 
@@ -104,6 +129,9 @@ class MainWindow(wx.Frame):
             self.SelectAll()
         else:
             self.DeselectAll()
+
+    def OnQualityChange(self, evt):
+        self.userConfig["selectedListBoxItems"] = self.listBox.GetSelections()
 
     def OnUsernameChange(self, evt):
         self.userConfig["anilistUsername"] = self.listUrlTextInput.GetLineText(0)

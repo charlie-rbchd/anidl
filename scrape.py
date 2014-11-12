@@ -41,7 +41,7 @@ def __fetch_nyaa(anilist_entry):
     browser.open("http://www.nyaa.se/?page=search&cats=1_37&filter=2&term=%s" % url_title)
     return browser.response().read()
 
-def __parse_nyaa(anilist_entry, nyaa_html):
+def __parse_nyaa(anilist_entry, nyaa_html, blacklisted_qualities):
     soup = BeautifulSoup(nyaa_html, "html5lib")
 
     pattern_title = re.compile("\s0*%i(v[0-9]+)?\s" % anilist_entry[1])
@@ -49,25 +49,29 @@ def __parse_nyaa(anilist_entry, nyaa_html):
     pattern_id_tags = re.compile("\[[a-zA-F0-9]{8}\]")
 
     entries = []
-    for entry in soup.find_all("tr", class_=["trusted", "aplus"]):
+    for entry in soup.find_all("tr", class_="tlistrow"):
         # TODO: Show entries of ALL undownloaded+unwatched episodes?
         url = entry.find("td", class_="tlistdownload").a["href"]
 
         title = entry.find("td", class_="tlistname").a.get_text()
+        title = re.sub("_", " ", title) # Some titles use underscores instead of spaces.
         title_no_tags = re.sub(pattern_tags, "", title)
 
-        if re.search(pattern_title, title_no_tags) != None and \
-            '480p' not in title and not download.already(anilist_entry):
+        if re.search(pattern_title, title_no_tags) != None and not download.already(anilist_entry):
+            legit = True
+            for quality in blacklisted_qualities:
+                if quality in title:
+                    legit = False
+                    break
 
-            # Formatting -- for humans.
-            title = re.sub("_", " ", title) # Some titles use underscores instead of spaces.
-            title = re.sub(pattern_id_tags, "", title) # Remove identifier tags.
-
-            entries.append((title, url, anilist_entry[0], anilist_entry[1]))
+            if legit:
+                # Formatting -- for humans.
+                title = re.sub(pattern_id_tags, "", title) # Remove identifier tags.
+                entries.append((title, url, anilist_entry[0], anilist_entry[1]))
     return entries
 
-def fetch(anilist_username):
+def fetch(anilist_username, blacklisted_qualities):
     entries = []
     for entry in __parse_anilist(__fetch_anilist(anilist_username)):
-        entries.extend(__parse_nyaa(entry, __fetch_nyaa(entry)))
+        entries.extend(__parse_nyaa(entry, __fetch_nyaa(entry), blacklisted_qualities))
     return entries
