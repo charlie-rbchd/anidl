@@ -1,35 +1,56 @@
 import re
 import urllib
+import urllib2
+import json
 import mechanize
 import cookielib
 import download
 from bs4 import BeautifulSoup
 
 # Emulate a browser
+headers = {"User-agent": "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.111 Safari/537.36"}
+cookie_jar = cookielib.LWPCookieJar()
+
+urllib2.install_opener(urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie_jar)))
+
 browser = mechanize.Browser()
-browser.set_cookiejar(cookielib.LWPCookieJar())
+browser.set_cookiejar(cookie_jar)
 browser.set_handle_equiv(True)
 browser.set_handle_redirect(True)
 browser.set_handle_referer(True)
 browser.set_handle_robots(False)
 browser.set_handle_refresh(mechanize._http.HTTPRefreshProcessor(), max_time=1)
-browser.addheaders = [('User-agent', 'Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.111 Safari/537.36')]
+browser.addheaders = [headers]
 
 def __fetch_anilist(anilist_username):
-    browser.open("http://anilist.co/animelist/%s" % anilist_username)
-    return browser.response().read()
+    auth_data = urllib.urlencode({"grant_type": "client_credentials",
+                                  "client_id": "<client ID>",
+                                  "client_secret": "<client secret>"})
+    token_request = urllib2.Request("https://anilist.co/api/auth/access_token", auth_data, headers)
+    token_response = json.load(urllib2.urlopen(token_request))
 
-def __parse_anilist(anilist_html):
-    soup = BeautifulSoup(anilist_html, "html5lib")
+    access_token = urllib.urlencode({"access_token": token_response["access_token"]})
+    list_request = urllib2.Request("https://anilist.co/api/user/%s/animelist?%s" % (anilist_username, access_token),
+                                   headers=headers)
+    list_response = json.load(urllib2.urlopen(list_request))
+    return list_response
+
+def __parse_anilist(anilist_json):
+    # Use a customly-defined list, fallback onto watching list if there is none.
+    try:
+        list_index = anilist_json["custom_list_anime"].index("Anidl")
+        list = anilist_json["custom_lists"][list_index]
+    except ValueError:
+        list = anilist_json["lists"]["watching"]
 
     pattern_ascii = re.compile("[^\x00-\x7F]+")
-
     entries = []
-    for entry in soup.find(id="Watching").find_all("tr", class_="rtitle"):
-        parts = entry.find_all("td")
+    for entry in list:
+        title = re.sub(pattern_ascii, " ", entry["anime"]["title_romaji"]).strip() # Replace non-ASCII characters with spaces
+        progress = int(entry["episodes_watched"]) + 1
 
-        title = re.sub(pattern_ascii, " ", parts[0].a.get_text()).strip() # Replace non-ASCII characters with spaces
-        progress = int(parts[2].span.get_text()) + 1
+        # TODO: Take total episodes into account when doing episodes look ahead.
+        # total_episodes = int(entry["anime"]["total_episodes"])
 
         entries.append((title, progress))
     return entries
@@ -49,6 +70,7 @@ def __parse_nyaa(anilist_entry, nyaa_html, blacklisted_qualities, look_ahead):
     pattern_id_tags = re.compile("\[[a-zA-F0-9]{8}\]")
 
     entries = []
+    i = 0
     for entry in soup.find_all("tr", class_="tlistrow"):
         url = entry.find("td", class_="tlistdownload").a["href"]
 
@@ -57,7 +79,7 @@ def __parse_nyaa(anilist_entry, nyaa_html, blacklisted_qualities, look_ahead):
         title = re.sub(pattern_id_tags, "", title) # Remove identifier tags.
         title_no_tags = re.sub(pattern_tags, "", title)
 
-        if not download.already(anilist_entry):
+        if not download.already((anilist_entry[0], anilist_entry[1] + i)):
             legit = False
 
             for p in pattern_title:
@@ -71,9 +93,11 @@ def __parse_nyaa(anilist_entry, nyaa_html, blacklisted_qualities, look_ahead):
                     break
 
             if legit:
-                entries.append((title, url, anilist_entry[0], anilist_entry[1]))
+                entries.append((title, url, anilist_entry[0], anilist_entry[1] + i))
+        i += 1
     return entries
 
+# TODO: Use a settings object for infos provided from the UI
 def fetch(anilist_username, blacklisted_qualities, look_ahead):
     download.open()
     entries = []
