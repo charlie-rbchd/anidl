@@ -8,7 +8,7 @@ import download
 from bs4 import BeautifulSoup
 
 # Emulate a browser
-headers = {"User-agent": "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.111 Safari/537.36"}
+user_agent = "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.111 Safari/537.36"
 cookie_jar = cookielib.LWPCookieJar()
 
 urllib2.install_opener(urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie_jar)))
@@ -20,18 +20,19 @@ browser.set_handle_redirect(True)
 browser.set_handle_referer(True)
 browser.set_handle_robots(False)
 browser.set_handle_refresh(mechanize._http.HTTPRefreshProcessor(), max_time=1)
-browser.addheaders = [headers]
+browser.addheaders = [("User-agent", user_agent)]
 
 def __fetch_anilist(anilist_username):
     auth_data = urllib.urlencode({"grant_type": "client_credentials",
                                   "client_id": "<client ID>",
                                   "client_secret": "<client secret>"})
-    token_request = urllib2.Request("https://anilist.co/api/auth/access_token", auth_data, headers)
+    token_request = urllib2.Request("https://anilist.co/api/auth/access_token", auth_data, {"User-agent": user_agent})
     token_response = json.load(urllib2.urlopen(token_request))
 
     access_token = urllib.urlencode({"access_token": token_response["access_token"]})
+
     list_request = urllib2.Request("https://anilist.co/api/user/%s/animelist?%s" % (anilist_username, access_token),
-                                   headers=headers)
+                                   headers={"User-agent": user_agent})
     list_response = json.load(urllib2.urlopen(list_request))
     return list_response
 
