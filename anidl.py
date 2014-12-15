@@ -82,14 +82,12 @@ class MainWindow(wx.Frame):
         sizer.Add(listUrlLabel, 0, wx.TOP | wx.LEFT | wx.RIGHT | wx.ALIGN_LEFT, 5)
         sizer.Add(self.listUrlTextInput, 0, wx.EXPAND | wx.ALL | wx.ALIGN_LEFT, 5)
 
-        filterLabelsSizer = wx.BoxSizer(wx.HORIZONTAL)
+        filterLabelsSizer = wx.FlexGridSizer(2, 2)
         filterLabelsSizer.Add(listBoxLabel, 0, wx.TOP | wx.LEFT | wx.RIGHT | wx.ALIGN_LEFT, 5)
-        filterLabelsSizer.Add(comboBoxLabel, 0, wx.TOP | wx.ALIGN_LEFT, 5)
-        filterControlsSizer = wx.BoxSizer(wx.HORIZONTAL)
-        filterControlsSizer.Add(self.listBox, 0, wx.ALL | wx.ALIGN_LEFT, 5)
-        filterControlsSizer.Add(self.comboBox, 0, wx.ALL | wx.ALIGN_LEFT, 5)
+        filterLabelsSizer.Add(comboBoxLabel, 0, wx.TOP | wx.LEFT | wx.RIGHT | wx.ALIGN_LEFT, 5)
+        filterLabelsSizer.Add(self.listBox, 0, wx.ALL | wx.ALIGN_LEFT, 5)
+        filterLabelsSizer.Add(self.comboBox, 0, wx.ALL | wx.ALIGN_LEFT, 5)
         sizer.Add(filterLabelsSizer, 0)
-        sizer.Add(filterControlsSizer, 0)
 
         sizer.AddSpacer(15)
         sizer.Add(self.checkListToggle, 0, wx.ALL, 5)
@@ -176,5 +174,5 @@ class MainWindow(wx.Frame):
 
 if __name__ == "__main__":
     app = wx.App(False)
-    frame = MainWindow(None, "Anidl")
+    frame = MainWindow(None, "anidl")
     app.MainLoop()
