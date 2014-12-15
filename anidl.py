@@ -12,19 +12,20 @@ class MainWindow(wx.Frame):
         self.userConfig = shelve.open("config", writeback=True)
 
         # Elements creation
-        self.SetBackgroundColour('white')
+        self.panel = wx.Panel(self)
+        self.panel.SetBackgroundColour('white')
 
-        dirPickerLabel = wx.StaticText(self, -1, "Download directory")
+        dirPickerLabel = wx.StaticText(self.panel, -1, "Download directory")
         dirPickerDefaultValue = self.userConfig["downloadDir"] if "downloadDir" in self.userConfig else ""
-        self.dirPicker = wx.DirPickerCtrl(self, -1, dirPickerDefaultValue, "Select your download directory")
+        self.dirPicker = wx.DirPickerCtrl(self.panel, -1, dirPickerDefaultValue, "Select your download directory")
 
-        listUrlLabel = wx.StaticText(self, -1, "Anilist username")
+        listUrlLabel = wx.StaticText(self.panel, -1, "Anilist username")
         listUrlTextInputDefaultValue = self.userConfig["anilistUsername"] if "anilistUsername" in self.userConfig else ""
-        self.listUrlTextInput = wx.TextCtrl(self, -1, listUrlTextInputDefaultValue)
+        self.listUrlTextInput = wx.TextCtrl(self.panel, -1, listUrlTextInputDefaultValue)
 
-        listBoxLabel = wx.StaticText(self, -1, "Target qualities")
+        listBoxLabel = wx.StaticText(self.panel, -1, "Target qualities")
         self.listBoxItems = ["480p", "720p", "1080p"]
-        self.listBox = wx.ListBox(self, -1, choices=self.listBoxItems, style=wx.LB_MULTIPLE)
+        self.listBox = wx.ListBox(self.panel, -1, choices=self.listBoxItems, style=wx.LB_MULTIPLE)
 
         if "selectedListBoxItems" in self.userConfig:
             for item in self.userConfig["selectedListBoxItems"]:
@@ -33,15 +34,15 @@ class MainWindow(wx.Frame):
             for i in range(len(self.listBoxItems)):
                 self.listBox.SetSelection(i)
 
-        comboBoxLabel = wx.StaticText(self, -1, "Episodes look-ahead")
-        self.comboBox = wx.ComboBox(self, -1, choices=["1", "2", "3"], style=wx.CB_READONLY)
+        comboBoxLabel = wx.StaticText(self.panel, -1, "Episodes look-ahead")
+        self.comboBox = wx.ComboBox(self.panel, -1, choices=["1", "2", "3"], style=wx.CB_READONLY)
         self.comboBox.SetSelection(self.userConfig["selectedComboBoxItem"] if "selectedComboBoxItem" in self.userConfig else 0)
 
-        self.checkListToggle = wx.CheckBox(self, -1, "Select/Deselect all")
+        self.checkListToggle = wx.CheckBox(self.panel, -1, "Select/Deselect all")
         self.checkListToggle.SetValue(True)
-        self.checkList = wx.CheckListBox(self, -1, choices=[""]*10)
+        self.checkList = wx.CheckListBox(self.panel, -1, choices=[""]*10)
 
-        downloadButton = wx.Button(self, -1, "Download my chinese cartoons")
+        downloadButton = wx.Button(self.panel, -1, "Download my chinese cartoons")
 
         # Menu creation
         fileMenu = wx.Menu()
@@ -93,7 +94,7 @@ class MainWindow(wx.Frame):
         sizer.Add(self.checkListToggle, 0, wx.ALL, 5)
         sizer.Add(self.checkList, 0, wx.EXPAND | wx.ALL | wx.ALIGN_LEFT)
         sizer.Add(downloadButton, 0, wx.ALL | wx.ALIGN_CENTER_HORIZONTAL, 15)
-        self.SetSizer(sizer)
+        self.panel.SetSizer(sizer)
 
         self.Show(True)
         self.FetchData()
