@@ -1,4 +1,5 @@
 import wx
+from wx.lib.delayedresult import startWorker
 import shelve
 import scrape
 import download
@@ -113,7 +114,9 @@ class MainWindow(wx.Frame):
 
     def FetchData(self):
         self.checkList.Clear()
+        startWorker(self.OnDataFertched, self.FetchDataWorker)
 
+    def FetchDataWorker(self):
         unselectedQualities = [self.listBoxItems[i] for i in range(len(self.listBoxItems))
                                if i not in self.listBox.GetSelections()]
 
@@ -124,7 +127,8 @@ class MainWindow(wx.Frame):
         except:
             self.checkListItems = [];
 
-        if (len(self.checkListItems) != 0):
+    def OnDataFertched(self, result):
+        if len(self.checkListItems) != 0:
             self.checkList.InsertItems([entry["name"] for entry in self.checkListItems], 0)
             self.SelectAll()
 
@@ -136,7 +140,7 @@ class MainWindow(wx.Frame):
     def OnDownload(self, evt):
         download.open()
         for i in range(len(self.checkListItems)):
-            if (self.checkList.IsChecked(i)):
+            if self.checkList.IsChecked(i):
                 download.torrent(self.checkListItems[i], self.dirPicker.GetPath())
         download.close()
 
