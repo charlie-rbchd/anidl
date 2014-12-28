@@ -13,12 +13,12 @@ def open():
 
     db_cursor.execute('''CREATE TABLE IF NOT EXISTS animes (
                             id INTEGER PRIMARY KEY NOT NULL,
-                            title TEXT NOT NULL,
+                            title TEXT COLLATE NOCASE NOT NULL,
                             progress INTEGER NOT NULL,
                             UNIQUE (title) ON CONFLICT REPLACE)''')
 
 def already(entry):
-    db_cursor.execute("SELECT * FROM animes WHERE title = ? AND progress = ?", entry)
+    db_cursor.execute("SELECT * FROM animes WHERE title = ? AND progress >= ?", entry)
     return db_cursor.fetchone() != None
 
 def torrent(entry, dir):
