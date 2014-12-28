@@ -48,18 +48,17 @@ def __parse_anilist(anilist_json):
     pattern_ascii = re.compile("[^\x00-\x7F]+")
     entries = []
     for entry in list:
-        title = re.sub(pattern_ascii, " ", entry["anime"]["title_romaji"]).strip() # Replace non-ASCII characters with spaces
-        progress = int(entry["episodes_watched"]) + 1
-
-        # TODO: Take total episodes into account when doing episodes look ahead.
-        # total_episodes = int(entry["anime"]["total_episodes"])
-
-        entries.append((title, progress))
+        new_entry = {
+            "title" : re.sub(pattern_ascii, " ", entry["anime"]["title_romaji"]).strip(), # Replace non-ASCII characters with spaces
+            "progress": int(entry["episodes_watched"]) + 1,
+            "total_episodes": int(entry["anime"]["total_episodes"])
+        };
+        entries.append(new_entry)
     return entries
 
 def __fetch_nyaa(anilist_entry):
     # TODO: Add support for multi-page crawling.
-    url_title = urllib.quote_plus(re.sub(" ", "+", anilist_entry[0]))
+    url_title = urllib.quote_plus(re.sub(" ", "+", anilist_entry["title"]))
 
     browser.open("http://www.nyaa.se/?page=search&cats=1_37&filter=2&term=%s" % url_title)
     return browser.response().read()
@@ -67,12 +66,11 @@ def __fetch_nyaa(anilist_entry):
 def __parse_nyaa(anilist_entry, nyaa_html, blacklisted_qualities, look_ahead):
     soup = BeautifulSoup(nyaa_html, "html5lib")
 
-    pattern_title = [re.compile("\s0*%i(v[0-9]+)?\s" % (anilist_entry[1] + i)) for i in range(look_ahead)]
+    pattern_title = [re.compile("\s0*%i(v[0-9]+)?\s" % (anilist_entry["progress"] + i)) for i in range(look_ahead)]
     pattern_tags = re.compile("(\[.*?\]|\(.*?\))")
     pattern_id_tags = re.compile("\[[a-zA-F0-9]{8}\]")
 
     entries = []
-    i = 0
     for entry in soup.find_all("tr", class_="tlistrow"):
         url = entry.find("td", class_="tlistdownload").a["href"]
 
@@ -81,22 +79,14 @@ def __parse_nyaa(anilist_entry, nyaa_html, blacklisted_qualities, look_ahead):
         title = re.sub(pattern_id_tags, "", title) # Remove identifier tags.
         title_no_tags = re.sub(pattern_tags, "", title)
 
-        if not download.already((anilist_entry[0], anilist_entry[1] + i)) and ".mkv" in title:
-            legit = False
+        for i in range(look_ahead):
+            if ".mkv" in title\
+                and anilist_entry["progress"] + i <= anilist_entry["total_episodes"]\
+                and not download.already((anilist_entry["title"], anilist_entry["progress"] + i))\
+                and re.search(pattern_title[i], title_no_tags) != None\
+                and not any(quality in title for quality in blacklisted_qualities):
 
-            for p in pattern_title:
-                if re.search(p, title_no_tags) != None:
-                    legit = True
-                    break
-
-            for quality in blacklisted_qualities:
-                if quality in title:
-                    legit = False
-                    break
-
-            if legit:
-                entries.append((title, url, anilist_entry[0], anilist_entry[1] + i))
-        i += 1
+                entries.append((title, url, anilist_entry["title"], anilist_entry["progress"] + i))
     return entries
 
 # TODO: Use a settings object for infos provided from the UI
