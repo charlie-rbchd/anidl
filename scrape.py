@@ -48,11 +48,10 @@ def __parse_anilist(anilist_json):
     pattern_ascii = re.compile("[^\x00-\x7F]+")
     entries = []
     for entry in list:
-        new_entry = {
-            "title" : re.sub(pattern_ascii, " ", entry["anime"]["title_romaji"]).strip(), # Replace non-ASCII characters with spaces
-            "progress": int(entry["episodes_watched"]) + 1,
-            "total_episodes": int(entry["anime"]["total_episodes"])
-        };
+        new_entry = {}
+        new_entry["title"] = re.sub(pattern_ascii, " ", entry["anime"]["title_romaji"]).strip() # Replace non-ASCII characters with spaces
+        new_entry["progress"] = int(entry["episodes_watched"]) + 1
+        new_entry["total_episodes"] = int(entry["anime"]["total_episodes"])
         entries.append(new_entry)
     return entries
 
@@ -82,11 +81,11 @@ def __parse_nyaa(anilist_entry, nyaa_html, blacklisted_qualities, look_ahead):
         for i in range(look_ahead):
             if ".mkv" in title\
                 and anilist_entry["progress"] + i <= anilist_entry["total_episodes"]\
-                and not download.already((anilist_entry["title"], anilist_entry["progress"] + i))\
+                and not download.already({"title": anilist_entry["title"], "progress": anilist_entry["progress"] + i})\
                 and re.search(pattern_title[i], title_no_tags) != None\
                 and not any(quality in title for quality in blacklisted_qualities):
 
-                entries.append((title, url, anilist_entry["title"], anilist_entry["progress"] + i))
+                entries.append({"name": title, "url": url, "title": anilist_entry["title"], "progress": anilist_entry["progress"] + i})
     return entries
 
 # TODO: Use a settings object for infos provided from the UI

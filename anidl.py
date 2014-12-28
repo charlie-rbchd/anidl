@@ -121,7 +121,7 @@ class MainWindow(wx.Frame):
                                            int(self.comboBox.GetSelection()) + 1)
 
         if (len(self.checkListItems) != 0):
-            self.checkList.InsertItems([entry[0] for entry in self.checkListItems], 0)
+            self.checkList.InsertItems([entry["name"] for entry in self.checkListItems], 0)
             self.SelectAll()
 
         self.checkList.SetFocus()

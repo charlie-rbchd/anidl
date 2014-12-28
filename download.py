@@ -18,12 +18,12 @@ def open():
                             UNIQUE (title) ON CONFLICT REPLACE)''')
 
 def already(entry):
-    db_cursor.execute("SELECT * FROM animes WHERE title = ? AND progress >= ?", entry)
+    db_cursor.execute("SELECT * FROM animes WHERE title = ? AND progress >= ?", (entry["title"], entry["progress"]))
     return db_cursor.fetchone() != None
 
 def torrent(entry, dir):
-    urllib.urlretrieve(entry[1], os.path.join(dir, "%s.torrent" % entry[0]))
-    db_cursor.execute("INSERT INTO animes (title, progress) VALUES (?, ?)", (entry[2], entry[3]))
+    urllib.urlretrieve(entry["url"], os.path.join(dir, "%s.torrent" % entry["name"]))
+    db_cursor.execute("INSERT INTO animes (title, progress) VALUES (?, ?)", (entry["title"], entry["progress"]))
 
 def close():
     db_connect.commit()
