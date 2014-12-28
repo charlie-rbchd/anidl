@@ -169,6 +169,7 @@ class MainWindow(wx.Frame):
         self.userConfig.close()
         self.Destroy()
 
-app = wx.App(False)
-frame = MainWindow(None, "Anidl")
-app.MainLoop()
+if __name__ == "__main__":
+    app = wx.App(False)
+    frame = MainWindow(None, "Anidl")
+    app.MainLoop()
