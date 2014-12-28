@@ -3,6 +3,7 @@ import urllib
 import urllib2
 import json
 import mechanize
+import config
 import cookielib
 import download
 from bs4 import BeautifulSoup
@@ -24,8 +25,8 @@ browser.addheaders = [("User-agent", user_agent)]
 
 def __fetch_anilist(anilist_username):
     auth_data = urllib.urlencode({"grant_type": "client_credentials",
-                                  "client_id": "<client ID>",
-                                  "client_secret": "<client secret>"})
+                                  "client_id": config.ANILIST_CLIENT_ID,
+                                  "client_secret": config.ANILIST_CLIENT_SECRET})
     token_request = urllib2.Request("https://anilist.co/api/auth/access_token", auth_data, {"User-agent": user_agent})
     token_response = json.load(urllib2.urlopen(token_request))
 
@@ -80,7 +81,7 @@ def __parse_nyaa(anilist_entry, nyaa_html, blacklisted_qualities, look_ahead):
         title = re.sub(pattern_id_tags, "", title) # Remove identifier tags.
         title_no_tags = re.sub(pattern_tags, "", title)
 
-        if not download.already((anilist_entry[0], anilist_entry[1] + i)):
+        if not download.already((anilist_entry[0], anilist_entry[1] + i)) and ".mkv" in title:
             legit = False
 
             for p in pattern_title:
