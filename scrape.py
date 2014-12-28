@@ -9,31 +9,31 @@ import download
 from bs4 import BeautifulSoup
 
 # Emulate a browser
-user_agent = "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.111 Safari/537.36"
-cookie_jar = cookielib.LWPCookieJar()
+_user_agent = "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.111 Safari/537.36"
+_cookie_jar = cookielib.LWPCookieJar()
 
-urllib2.install_opener(urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie_jar)))
+urllib2.install_opener(urllib2.build_opener(urllib2.HTTPCookieProcessor(_cookie_jar)))
 
-browser = mechanize.Browser()
-browser.set_cookiejar(cookie_jar)
-browser.set_handle_equiv(True)
-browser.set_handle_redirect(True)
-browser.set_handle_referer(True)
-browser.set_handle_robots(False)
-browser.set_handle_refresh(mechanize._http.HTTPRefreshProcessor(), max_time=1)
-browser.addheaders = [("User-agent", user_agent)]
+_browser = mechanize.Browser()
+_browser.set_cookiejar(_cookie_jar)
+_browser.set_handle_equiv(True)
+_browser.set_handle_redirect(True)
+_browser.set_handle_referer(True)
+_browser.set_handle_robots(False)
+_browser.set_handle_refresh(mechanize._http.HTTPRefreshProcessor(), max_time=1)
+_browser.addheaders = [("User-agent", _user_agent)]
 
 def __fetch_anilist(anilist_username):
     auth_data = urllib.urlencode({"grant_type": "client_credentials",
                                   "client_id": config.ANILIST_CLIENT_ID,
                                   "client_secret": config.ANILIST_CLIENT_SECRET})
-    token_request = urllib2.Request("https://anilist.co/api/auth/access_token", auth_data, {"User-agent": user_agent})
+    token_request = urllib2.Request("https://anilist.co/api/auth/access_token", auth_data, {"User-agent": _user_agent})
     token_response = json.load(urllib2.urlopen(token_request))
 
     access_token = urllib.urlencode({"access_token": token_response["access_token"]})
 
     list_request = urllib2.Request("https://anilist.co/api/user/%s/animelist?%s" % (anilist_username, access_token),
-                                   headers={"User-agent": user_agent})
+                                   headers={"User-agent": _user_agent})
     list_response = json.load(urllib2.urlopen(list_request))
     return list_response
 
@@ -59,8 +59,8 @@ def __fetch_nyaa(anilist_entry):
     # TODO: Add support for multi-page crawling.
     url_title = urllib.quote_plus(re.sub(" ", "+", anilist_entry["title"]))
 
-    browser.open("http://www.nyaa.se/?page=search&cats=1_37&filter=2&term=%s" % url_title)
-    return browser.response().read()
+    _browser.open("http://www.nyaa.se/?page=search&cats=1_37&filter=2&term=%s" % url_title)
+    return _browser.response().read()
 
 def __parse_nyaa(anilist_entry, nyaa_html, blacklisted_qualities, look_ahead):
     soup = BeautifulSoup(nyaa_html, "html5lib")
