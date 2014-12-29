@@ -8,7 +8,7 @@ import cookielib
 import download
 from bs4 import BeautifulSoup
 
-# Emulate a browser
+# Emulate a browser.
 _user_agent = "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.111 Safari/537.36"
 _cookie_jar = cookielib.LWPCookieJar()
 
@@ -49,14 +49,14 @@ def __parse_anilist(anilist_json):
     entries = []
     for entry in list:
         new_entry = {}
-        new_entry["title"] = re.sub(pattern_ascii, " ", entry["anime"]["title_romaji"]).strip() # Replace non-ASCII characters with spaces
+        new_entry["title"] = re.sub(pattern_ascii, " ", entry["anime"]["title_romaji"]).strip() # Replace non-ASCII characters with spaces.
         new_entry["progress"] = int(entry["episodes_watched"]) + 1
         new_entry["total_episodes"] = int(entry["anime"]["total_episodes"])
         entries.append(new_entry)
     return entries
 
+# TODO: Implement multi-page crawling to be used when no episodes are found on the first page.
 def __fetch_nyaa(anilist_entry):
-    # TODO: Add support for multi-page crawling.
     url_title = urllib.quote_plus(re.sub(" ", "+", anilist_entry["title"]))
 
     _browser.open("http://www.nyaa.se/?page=search&cats=1_37&filter=2&term=%s" % url_title)
@@ -80,7 +80,7 @@ def __parse_nyaa(anilist_entry, nyaa_html, blacklisted_qualities, look_ahead):
 
         for i in range(look_ahead):
             if ".mkv" in title\
-                and anilist_entry["progress"] + i <= anilist_entry["total_episodes"]\
+                and (anilist_entry["total_episodes"] == 0 or anilist_entry["progress"] + i <= anilist_entry["total_episodes"])\
                 and not download.already({"title": anilist_entry["title"], "progress": anilist_entry["progress"] + i})\
                 and re.search(pattern_title[i], title_no_tags) != None\
                 and not any(quality in title for quality in blacklisted_qualities):
@@ -88,7 +88,7 @@ def __parse_nyaa(anilist_entry, nyaa_html, blacklisted_qualities, look_ahead):
                 entries.append({"name": title, "url": url, "title": anilist_entry["title"], "progress": anilist_entry["progress"] + i})
     return entries
 
-# TODO: Use a settings object for infos provided from the UI
+# TODO: Use a settings object for infos provided from the UI?
 def fetch(anilist_username, blacklisted_qualities, look_ahead):
     download.open()
     entries = []
