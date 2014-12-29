@@ -13,24 +13,19 @@ for dbmodule in ["dbhash", "gdbm", "dbm", "dumbdbm"]:
     except ImportError:
         pass
     else:
-        # If we found the module, ensure it"s copied to the build directory.
+         # If we found the module, ensure it"s copied to the build directory.
         packages.append(dbmodule)
 
-setup(
-    options = {"py2exe": {"compressed": 2,
-                          "optimize": 2,
-                          "includes": includes,
-                          "excludes": excludes,
-                          "packages": packages,
-                          "dll_excludes": dll_excludes,
-                          "bundle_files": 1,
-                          "dist_dir": "dist",
-                          "xref": False,
-                          "skip_archive": False,
-                          "ascii": False,
-                          "custom_boot_script": "",
-                         }
-              },
-    zipfile = None,
-    windows=["anidl.py"]
-)
+setup(windows=["anidl.py"], zipfile = None,
+      options = {"py2exe": {"compressed": 2,
+                            "optimize": 2,
+                            "includes": includes,
+                            "excludes": excludes,
+                            "packages": packages,
+                            "dll_excludes": dll_excludes,
+                            "bundle_files": 1,
+                            "dist_dir": "dist",
+                            "xref": False,
+                            "skip_archive": False,
+                            "ascii": False,
+                            "custom_boot_script": ""}})
