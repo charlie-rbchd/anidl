@@ -10,3 +10,5 @@ Then, in a command prompt, enter the following commands:
 cd /path/to/project/
 python setup.py py2exe
 ```
+
+The resulting executable will be placed under the ```dist``` folder.
