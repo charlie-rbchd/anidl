@@ -117,8 +117,13 @@ class MainWindow(wx.Frame):
 
         unselectedQualities = [self.listBoxItems[i] for i in range(len(self.listBoxItems))
                                if i not in self.listBox.GetSelections()]
-        self.checkListItems = scrape.fetch(self.listUrlTextInput.GetLineText(0), unselectedQualities,
-                                           int(self.comboBox.GetSelection()) + 1)
+
+        try:
+            self.checkListItems = scrape.fetch(self.listUrlTextInput.GetLineText(0),
+                                               unselectedQualities,
+                                               int(self.comboBox.GetSelection()) + 1)
+        except:
+            self.checkListItems = [];
 
         if (len(self.checkListItems) != 0):
             self.checkList.InsertItems([entry["name"] for entry in self.checkListItems], 0)
