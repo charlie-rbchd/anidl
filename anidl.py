@@ -116,20 +116,24 @@ class MainWindow(wx.Frame):
 
     def FetchData(self):
         self.checkList.Clear()
-        startWorker(self.OnDataFetched, self.FetchDataWorker)
 
-    def FetchDataWorker(self):
         unselectedQualities = [self.listBoxItems[i] for i in range(len(self.listBoxItems))
                                if i not in self.listBox.GetSelections()]
 
-        try:
-            self.checkListItems = scrape.fetch(self.listUrlTextInput.GetLineText(0),
-                                               unselectedQualities,
-                                               int(self.comboBox.GetSelection()) + 1)
-        except:
-            self.checkListItems = [];
+        startWorker(self.OnDataFetched, self.FetchDataWorker, wargs=(self.listUrlTextInput.GetLineText(0),
+                                                                     unselectedQualities,
+                                                                     int(self.comboBox.GetSelection()) + 1))
+
+    def FetchDataWorker(self, anilist_username, blacklisted_qualities, look_ahead):
+        return scrape.fetch(anilist_username, blacklisted_qualities, look_ahead)
 
     def OnDataFetched(self, result):
+        try:
+            self.checkListItems = result.get()
+        except Exception as e:
+            print e
+            self.checkListItems = []
+
         if len(self.checkListItems) != 0:
             self.checkList.InsertItems([entry["name"] for entry in self.checkListItems], 0)
             self.SelectAll()
