@@ -84,18 +84,20 @@ class MainWindow(wx.Frame):
         sizer.Add(listUrlLabel, 0, wx.TOP | wx.LEFT | wx.RIGHT | wx.ALIGN_LEFT, 5)
         sizer.Add(self.listUrlTextInput, 0, wx.EXPAND | wx.ALL | wx.ALIGN_LEFT, 5)
 
-        filterLabelsSizer = wx.FlexGridSizer(2, 2)
-        filterLabelsSizer.Add(listBoxLabel, 0, wx.TOP | wx.LEFT | wx.RIGHT | wx.ALIGN_LEFT, 5)
-        filterLabelsSizer.Add(comboBoxLabel, 0, wx.TOP | wx.LEFT | wx.RIGHT | wx.ALIGN_LEFT, 5)
-        filterLabelsSizer.Add(self.listBox, 0, wx.ALL | wx.ALIGN_LEFT, 5)
-        filterLabelsSizer.Add(self.comboBox, 0, wx.ALL | wx.ALIGN_LEFT, 5)
-        sizer.Add(filterLabelsSizer, 0)
+        filtersSizer = wx.FlexGridSizer(2, 2)
+        filtersSizer.Add(listBoxLabel, 0, wx.TOP | wx.LEFT | wx.RIGHT | wx.ALIGN_LEFT, 5)
+        filtersSizer.Add(comboBoxLabel, 0, wx.TOP | wx.LEFT | wx.RIGHT | wx.ALIGN_LEFT, 5)
+        filtersSizer.Add(self.listBox, 0, wx.ALL | wx.ALIGN_LEFT, 5)
+        filtersSizer.Add(self.comboBox, 0, wx.ALL | wx.ALIGN_LEFT, 5)
+        sizer.Add(filtersSizer, 0)
 
         sizer.AddSpacer(15)
         sizer.Add(self.checkListToggle, 0, wx.ALL, 5)
         sizer.Add(self.checkList, 0, wx.EXPAND | wx.ALL | wx.ALIGN_LEFT)
         sizer.Add(downloadButton, 0, wx.ALL | wx.ALIGN_CENTER_HORIZONTAL, 15)
+
         self.panel.SetSizer(sizer)
+        self.panel.Layout()
 
         self.Show(True)
         self.FetchData()
