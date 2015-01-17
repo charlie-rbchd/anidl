@@ -23,7 +23,7 @@ _browser.set_handle_robots(False)
 _browser.set_handle_refresh(mechanize._http.HTTPRefreshProcessor(), max_time=1)
 _browser.addheaders = [("User-agent", _user_agent)]
 
-def __fetch_anilist(anilist_username):
+def _fetch_anilist(anilist_username):
     auth_data = urllib.urlencode({"grant_type": "client_credentials",
                                   "client_id": config.ANILIST_CLIENT_ID,
                                   "client_secret": config.ANILIST_CLIENT_SECRET})
@@ -37,7 +37,7 @@ def __fetch_anilist(anilist_username):
     list_response = json.load(urllib2.urlopen(list_request))
     return list_response
 
-def __parse_anilist(anilist_json):
+def _parse_anilist(anilist_json):
     # Use a customly-defined list, fallback onto watching list if there is none.
     try:
         list_index = anilist_json["custom_list_anime"].index("Anidl")
@@ -55,44 +55,55 @@ def __parse_anilist(anilist_json):
         entries.append(new_entry)
     return entries
 
-# TODO: Implement multi-page crawling to be used when no episodes are found on the first page.
-def __fetch_nyaa(anilist_entry):
-    url_title = urllib.quote_plus(re.sub(" ", "+", anilist_entry["title"]))
+def _fetch_nyaa_once(title):
+    url_title = urllib.quote_plus(re.sub(" ", "+", title))
 
     _browser.open("http://www.nyaa.se/?page=search&cats=1_37&filter=2&term=%s" % url_title)
     return _browser.response().read()
 
-def __parse_nyaa(anilist_entry, nyaa_html, blacklisted_qualities, look_ahead):
-    soup = BeautifulSoup(nyaa_html, "html5lib")
+# TODO: Implement multi-page crawling.
+def _fetch_nyaa(anilist_entry, aliases):
+    pages = [_fetch_nyaa_once(anilist_entry["title"])]
+
+    for alias in aliases:
+        pages.append(_fetch_nyaa_once(alias))
+
+    return pages
+
+def _parse_nyaa(anilist_entry, nyaa_pages, blacklisted_qualities, look_ahead):
 
     pattern_title = [re.compile("\s0*%i(v[0-9]+)?\s" % (anilist_entry["progress"] + i)) for i in range(look_ahead)]
     pattern_tags = re.compile("(\[.*?\]|\(.*?\))")
     pattern_id_tags = re.compile("\[[a-zA-F0-9]{8}\]")
 
     entries = []
-    for entry in soup.find_all("tr", class_="tlistrow"):
-        url = entry.find("td", class_="tlistdownload").a["href"]
+    for nyaa_html in nyaa_pages:
+        soup = BeautifulSoup(nyaa_html, "html5lib")
 
-        title = entry.find("td", class_="tlistname").a.get_text()
-        title = re.sub("_", " ", title) # Some titles use underscores instead of spaces.
-        title = re.sub(pattern_id_tags, "", title) # Remove identifier tags.
-        title_no_tags = re.sub(pattern_tags, "", title)
+        for entry in soup.find_all("tr", class_="tlistrow"):
+            url = entry.find("td", class_="tlistdownload").a["href"]
 
-        for i in range(look_ahead):
-            if ".mkv" in title\
-                and (anilist_entry["total_episodes"] == 0 or anilist_entry["progress"] + i <= anilist_entry["total_episodes"])\
-                and not download.already({"title": anilist_entry["title"], "progress": anilist_entry["progress"] + i})\
-                and re.search(pattern_title[i], title_no_tags) != None\
-                and not any(quality in title for quality in blacklisted_qualities):
+            title = entry.find("td", class_="tlistname").a.get_text()
+            title = re.sub("_", " ", title) # Some titles use underscores instead of spaces.
+            title = re.sub(pattern_id_tags, "", title) # Remove identifier tags.
+            title_no_tags = re.sub(pattern_tags, "", title)
 
-                entries.append({"name": title, "url": url, "title": anilist_entry["title"], "progress": anilist_entry["progress"] + i})
+            for i in range(look_ahead):
+                if ".mkv" in title\
+                    and (anilist_entry["total_episodes"] == 0 or anilist_entry["progress"] + i <= anilist_entry["total_episodes"])\
+                    and not download.already({"title": anilist_entry["title"], "progress": anilist_entry["progress"] + i})\
+                    and re.search(pattern_title[i], title_no_tags) != None\
+                    and not any(quality in title for quality in blacklisted_qualities):
+
+                    entries.append({"name": title, "url": url, "title": anilist_entry["title"], "progress": anilist_entry["progress"] + i})
     return entries
 
-# TODO: Use a settings object for infos provided from the UI?
+# TODO: Use an object to encapsulate the data provided by the UI?
 def fetch(anilist_username, blacklisted_qualities, look_ahead):
     download.open()
     entries = []
-    for entry in __parse_anilist(__fetch_anilist(anilist_username)):
-        entries.extend(__parse_nyaa(entry, __fetch_nyaa(entry), blacklisted_qualities, look_ahead))
+    for entry in _parse_anilist(_fetch_anilist(anilist_username)):
+        entry_aliases = config.ANILIST_TITLE_ALIASES[entry["title"]] if entry["title"] in config.ANILIST_TITLE_ALIASES else []
+        entries.extend(_parse_nyaa(entry, _fetch_nyaa(entry, entry_aliases), blacklisted_qualities, look_ahead))
     download.close()
     return entries

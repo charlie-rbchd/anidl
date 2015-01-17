@@ -4,7 +4,8 @@ import shelve
 import scrape
 import download
 
-# TODO: Add a user-fillable dictionary of replacement titles for more precise querying?
+# TODO: Add a loading icon inside the CheckListBox when scraping entries.
+# TODO: Add a system permitting the user to enter his own aliases for any title in his anilist.
 class MainWindow(wx.Frame):
     def __init__(self, parent, title):
         wx.Frame.__init__(self, parent, title=title, size=(400, 525))
