@@ -114,7 +114,7 @@ class MainWindow(wx.Frame):
 
     def FetchData(self):
         self.checkList.Clear()
-        startWorker(self.OnDataFertched, self.FetchDataWorker)
+        startWorker(self.OnDataFetched, self.FetchDataWorker)
 
     def FetchDataWorker(self):
         unselectedQualities = [self.listBoxItems[i] for i in range(len(self.listBoxItems))
@@ -127,7 +127,7 @@ class MainWindow(wx.Frame):
         except:
             self.checkListItems = [];
 
-    def OnDataFertched(self, result):
+    def OnDataFetched(self, result):
         if len(self.checkListItems) != 0:
             self.checkList.InsertItems([entry["name"] for entry in self.checkListItems], 0)
             self.SelectAll()
