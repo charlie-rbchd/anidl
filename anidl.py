@@ -100,7 +100,9 @@ class MainWindow(wx.Frame):
         self.panel.SetSizer(sizer)
         self.panel.Layout()
 
+        self.SetIcon(wx.Icon("anidl.ico", wx.BITMAP_TYPE_ICO))
         self.Show(True)
+
         self.FetchData()
 
     def SelectAll(self):
