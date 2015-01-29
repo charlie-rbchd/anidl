@@ -1,10 +1,10 @@
 import wx
+import wx.lib.agw.pyprogress as pp
 from wx.lib.delayedresult import startWorker
 import shelve
 import scrape
 import download
 
-# TODO: Add a loading icon inside the CheckListBox when scraping entries.
 # TODO: Add a system permitting the user to enter his own aliases for any title in his anilist.
 class MainWindow(wx.Frame):
     def __init__(self, parent, title):
@@ -15,7 +15,7 @@ class MainWindow(wx.Frame):
 
         # Elements creation
         self.panel = wx.Panel(self)
-        self.panel.SetBackgroundColour('white')
+        self.panel.SetBackgroundColour("#ffffff")
 
         dirPickerLabel = wx.StaticText(self.panel, -1, "Download directory")
         dirPickerDefaultValue = self.userConfig["downloadDir"] if "downloadDir" in self.userConfig else ""
@@ -127,6 +127,22 @@ class MainWindow(wx.Frame):
                                                                      unselectedQualities,
                                                                      int(self.comboBox.GetSelection()) + 1))
 
+        # Progress Dialog
+        self.progressComplete = False
+        self.progressDialog = pp.PyProgress(self, -1, "Fetching data", "This may take a while...",
+                                            wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME)
+        self.progressDialog.SetGaugeProportion(0.33)
+        self.progressDialog.SetGaugeSteps(60)
+        self.progressDialog.SetSecondGradientColour("#19202c")
+
+        keepGoing = True
+        while keepGoing and not self.progressComplete:
+            wx.MilliSleep(30)
+            keepGoing = self.progressDialog.UpdatePulse()
+
+        self.progressDialog.Destroy()
+        del self.progressComplete, self.progressDialog
+
     def FetchDataWorker(self, anilist_username, blacklisted_qualities, look_ahead):
         return scrape.fetch(anilist_username, blacklisted_qualities, look_ahead)
 
@@ -141,6 +157,7 @@ class MainWindow(wx.Frame):
             self.checkList.InsertItems([entry["name"] for entry in self.checkListItems], 0)
             self.SelectAll()
 
+        self.progressComplete = True
         self.checkList.SetFocus()
 
     def OnRefresh(self, evt):
