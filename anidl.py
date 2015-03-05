@@ -120,12 +120,13 @@ class MainWindow(wx.Frame):
     def FetchData(self):
         self.checkList.Clear()
 
-        unselectedQualities = [self.listBoxItems[i] for i in range(len(self.listBoxItems))
-                               if i not in self.listBox.GetSelections()]
+        unselectedQualities = [self.listBoxItems[i] for i in range(
+            len(self.listBoxItems)) if i not in self.listBox.GetSelections()]
 
-        startWorker(self.OnDataFetched, self.FetchDataWorker, wargs=(self.listUrlTextInput.GetLineText(0),
-                                                                     unselectedQualities,
-                                                                     int(self.comboBox.GetSelection()) + 1))
+        startWorker(self.OnDataFetched, self.FetchDataWorker, wargs=(
+            self.listUrlTextInput.GetLineText(0),
+            unselectedQualities,
+            int(self.comboBox.GetSelection()) + 1))
 
         # Progress Dialog
         self.progressComplete = False
@@ -140,6 +141,7 @@ class MainWindow(wx.Frame):
             wx.MilliSleep(30)
             keepGoing = self.progressDialog.UpdatePulse()
 
+        self.progressDialog.ReenableOtherWindows()
         self.progressDialog.Destroy()
         del self.progressComplete, self.progressDialog
 
