@@ -16,7 +16,7 @@ for dbmodule in ["dbhash", "gdbm", "dbm", "dumbdbm"]:
          # If we found the module, ensure it"s copied to the build directory.
         packages.append(dbmodule)
 
-setup(windows=[{"script": "anidl.py", "icon_resources": [(1, "anidl.ico")]}],
+setup(windows = [{"script": "anidl.py", "icon_resources": [(1, "anidl.ico")]}],
       zipfile = None,
       options = {"py2exe": {"compressed": 2,
                             "optimize": 2,

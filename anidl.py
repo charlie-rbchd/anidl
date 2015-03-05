@@ -1,3 +1,4 @@
+import os
 import wx
 import wx.lib.agw.pyprogress as pp
 from wx.lib.delayedresult import startWorker
@@ -100,7 +101,7 @@ class MainWindow(wx.Frame):
         self.panel.SetSizer(sizer)
         self.panel.Layout()
 
-        self.SetIcon(wx.Icon("anidl.ico", wx.BITMAP_TYPE_ICO))
+        self.SetIcon(wx.Icon("anidl.exe" if os.path.exists("anidl.exe") else "anidl.ico", wx.BITMAP_TYPE_ICO))
         self.Show(True)
 
         self.FetchData()
