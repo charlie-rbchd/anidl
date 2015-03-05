@@ -1,10 +1,16 @@
 import os
-import wx
-import wx.lib.agw.pyprogress as pp
-from wx.lib.delayedresult import startWorker
 import shelve
 import scrape
 import download
+
+# Ignore wxWidgets/wxWidgets version mismatch warnings.
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    import wx
+
+import wx.lib.agw.pyprogress as pp
+from wx.lib.delayedresult import startWorker
 
 # TODO: Add a system permitting the user to enter his own aliases for any title in his anilist.
 class MainWindow(wx.Frame):
