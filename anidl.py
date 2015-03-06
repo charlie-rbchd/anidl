@@ -9,13 +9,43 @@ with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import wx
 
-import wx.lib.agw.pyprogress as pp
 from wx.lib.delayedresult import startWorker
+import wx.dataview as dv
+import wx.lib.agw.pyprogress as pp
 
-# TODO: Add a system permitting the user to enter his own aliases for any title in his anilist.
+
+class AliasConfigWindow(wx.Frame):
+    def __init__(self, parent):
+        wx.Frame.__init__(self, parent, title="Configure Aliases",  size=(725, 400))
+
+        # Elements creation
+        self.panel = wx.Panel(self)
+        self.panel.SetBackgroundColour("#ffffff")
+
+        listCtrl = dv.DataViewListCtrl(self.panel, -1)
+        listCtrl.AppendTextColumn("Title", width=300)
+        listCtrl.AppendTextColumn("Alias", width=400, mode=dv.DATAVIEW_CELL_EDITABLE)
+
+        # Event bindings
+        self.Bind(wx.EVT_CLOSE, self.OnClose, self)
+
+        # Elements sizing and positing
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(listCtrl, 1, wx.EXPAND | wx.ALL, 0)
+
+        self.panel.SetSizer(sizer)
+        self.panel.Layout()
+
+        self.SetIcon(wx.Icon("anidl.exe" if os.path.exists("anidl.exe") else "anidl.ico", wx.BITMAP_TYPE_ICO))
+        # self.Show(True)
+
+    def OnClose(self, evt):
+        self.Show(False)
+
+
 class MainWindow(wx.Frame):
-    def __init__(self, parent, title):
-        wx.Frame.__init__(self, parent, title=title, size=(400, 525))
+    def __init__(self, parent):
+        wx.Frame.__init__(self, parent, title="Anidl", size=(400, 525))
 
         # Open config file
         self.userConfig = shelve.open("config", writeback=True)
@@ -53,6 +83,8 @@ class MainWindow(wx.Frame):
 
         downloadButton = wx.Button(self.panel, -1, "Download my chinese cartoons")
 
+        self.aliasConfigWindow = AliasConfigWindow(self)
+
         # Menu creation
         fileMenu = wx.Menu()
         refreshMenuItem = fileMenu.Append(-1, "Refresh\tCtrl+R")
@@ -64,6 +96,8 @@ class MainWindow(wx.Frame):
         editMenu = wx.Menu()
         selectAllMenuItem = editMenu.Append(-1, "Select All\tCtrl+A")
         deselectAllMenuItem = editMenu.Append(-1, "Deselect All\tCtrl+D")
+        editMenu.AppendSeparator()
+        configureAliasesMenuItem = editMenu.Append(-1, "Configure Aliases\tCtrl+Shift+A")
 
         menuBar = wx.MenuBar()
         menuBar.Append(fileMenu, "&File")
@@ -84,6 +118,7 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnExit, exitMenuItem)
         self.Bind(wx.EVT_MENU, self.OnSelectAll, selectAllMenuItem)
         self.Bind(wx.EVT_MENU, self.OnDeselectAll, deselectAllMenuItem)
+        self.Bind(wx.EVT_MENU, self.OnConfigureAliases, configureAliasesMenuItem)
 
         # Elements sizing and positing
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -172,6 +207,9 @@ class MainWindow(wx.Frame):
     def OnRefresh(self, evt):
         self.FetchData()
 
+    def OnConfigureAliases(self, evt):
+        self.aliasConfigWindow.Show(True)
+
     def OnDownload(self, evt):
         download.open()
         for i in range(len(self.checkListItems)):
@@ -212,7 +250,8 @@ class MainWindow(wx.Frame):
         self.userConfig.close()
         self.Destroy()
 
+
 if __name__ == "__main__":
     app = wx.App(False)
-    frame = MainWindow(None, "anidl")
+    frame = MainWindow(None)
     app.MainLoop()
