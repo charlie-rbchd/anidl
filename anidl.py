@@ -14,6 +14,7 @@ import wx.dataview as dv
 import wx.lib.agw.pyprogress as pp
 
 
+# TODO: Add a way to remove old entries from the list.
 class AliasConfigWindow(wx.Frame):
     def __init__(self, parent):
         wx.Frame.__init__(self, parent, title="Configure Aliases",  size=(725, 400))
@@ -27,7 +28,7 @@ class AliasConfigWindow(wx.Frame):
         self.dataView.AppendTextColumn("Alias", width=450, mode=dv.DATAVIEW_CELL_EDITABLE)
 
         # Event bindings
-        self.Bind(dv.EVT_DATAVIEW_ITEM_EDITING_DONE, self.OnAliasChange, self.dataView)
+        self.Bind(dv.EVT_DATAVIEW_ITEM_VALUE_CHANGED, self.OnAliasChanged, self.dataView)
         self.Bind(wx.EVT_SHOW, self.OnShow, self)
         self.Bind(wx.EVT_CLOSE, self.OnClose, self)
 
@@ -40,10 +41,12 @@ class AliasConfigWindow(wx.Frame):
 
         self.SetIcon(wx.Icon("anidl.exe" if os.path.exists("anidl.exe") else "anidl.ico", wx.BITMAP_TYPE_ICO))
 
-    def OnAliasChange(self, evt):
-        # TODO: Update the aliases user config.
-        # TODO: Separate multiple values with semi-colons.
-        pass
+    def OnAliasChanged(self, evt):
+        updatedRow = self.dataView.ItemToRow(evt.GetItem())
+        updatedRowTitle = self.dataView.GetTextValue(updatedRow, 0)
+        updatedRowAlias = self.dataView.GetTextValue(updatedRow, 1)
+
+        self.GetParent().userConfig["aliases"][updatedRowTitle] = [alias.strip() for alias in updatedRowAlias.split(";")]
 
     def OnShow(self, evt):
         if evt.GetShow():
@@ -123,10 +126,10 @@ class MainWindow(wx.Frame):
         # Event bindings
         self.Bind(wx.EVT_BUTTON, self.OnDownload, downloadButton)
         self.Bind(wx.EVT_CHECKBOX, self.OnToggleSelection, self.checkListToggle)
-        self.Bind(wx.EVT_TEXT, self.OnUsernameChange, self.listUrlTextInput)
-        self.Bind(wx.EVT_DIRPICKER_CHANGED, self.OnDownloadPathChange, self.dirPicker)
-        self.Bind(wx.EVT_LISTBOX, self.OnQualityChange, self.listBox)
-        self.Bind(wx.EVT_COMBOBOX, self.OnEpisodeLookAheadChange, self.comboBox)
+        self.Bind(wx.EVT_TEXT, self.OnUsernameChanged, self.listUrlTextInput)
+        self.Bind(wx.EVT_DIRPICKER_CHANGED, self.OnDownloadPathChanged, self.dirPicker)
+        self.Bind(wx.EVT_LISTBOX, self.OnQualityChanged, self.listBox)
+        self.Bind(wx.EVT_COMBOBOX, self.OnEpisodeLookAheadChanged, self.comboBox)
         self.Bind(wx.EVT_CLOSE, self.OnClose, self)
 
         self.Bind(wx.EVT_MENU, self.OnRefresh, refreshMenuItem)
@@ -160,8 +163,6 @@ class MainWindow(wx.Frame):
 
         self.SetIcon(wx.Icon("anidl.exe" if os.path.exists("anidl.exe") else "anidl.ico", wx.BITMAP_TYPE_ICO))
         self.Show(True)
-
-        self.FetchData()
 
     def SelectAll(self):
         self.checkListToggle.SetValue(True)
@@ -242,16 +243,16 @@ class MainWindow(wx.Frame):
         else:
             self.DeselectAll()
 
-    def OnEpisodeLookAheadChange(self, evt):
+    def OnEpisodeLookAheadChanged(self, evt):
         self.userConfig["selectedComboBoxItem"] = self.comboBox.GetSelection()
 
-    def OnQualityChange(self, evt):
+    def OnQualityChanged(self, evt):
         self.userConfig["selectedListBoxItems"] = self.listBox.GetSelections()
 
-    def OnUsernameChange(self, evt):
+    def OnUsernameChanged(self, evt):
         self.userConfig["anilistUsername"] = self.listUrlTextInput.GetLineText(0)
 
-    def OnDownloadPathChange(self, evt):
+    def OnDownloadPathChanged(self, evt):
         self.userConfig["downloadDir"] = self.dirPicker.GetPath()
 
     def OnSelectAll(self, evt):
@@ -270,5 +271,6 @@ class MainWindow(wx.Frame):
 
 if __name__ == "__main__":
     app = wx.App(False)
-    frame = MainWindow(None)
+    anidl = MainWindow(None)
+    anidl.FetchData()
     app.MainLoop()
