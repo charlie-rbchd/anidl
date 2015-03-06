@@ -57,21 +57,17 @@ def _parse_anilist(anilist_json):
 
 def _fetch_nyaa_once(title):
     url_title = urllib.quote_plus(re.sub(" ", "+", title))
-
     _browser.open("http://www.nyaa.se/?page=search&cats=1_37&filter=2&term=%s" % url_title)
     return _browser.response().read()
 
 # TODO: Implement multi-page crawling.
 def _fetch_nyaa(anilist_entry, aliases):
     pages = [_fetch_nyaa_once(anilist_entry["title"])]
-
     for alias in aliases:
         pages.append(_fetch_nyaa_once(alias))
-
     return pages
 
 def _parse_nyaa(anilist_entry, nyaa_pages, blacklisted_qualities, look_ahead):
-
     pattern_title = [re.compile("\s0*%i(v[0-9]+)?\s" % (anilist_entry["progress"] + i)) for i in range(look_ahead)]
     pattern_tags = re.compile("(\[.*?\]|\(.*?\))")
     pattern_id_tags = re.compile("\[[a-zA-F0-9]{8}\]")
@@ -98,12 +94,13 @@ def _parse_nyaa(anilist_entry, nyaa_pages, blacklisted_qualities, look_ahead):
                     entries.append({"name": title, "url": url, "title": anilist_entry["title"], "progress": anilist_entry["progress"] + i})
     return entries
 
-# TODO: Use an object to encapsulate the data provided by the UI?
-def fetch(anilist_username, blacklisted_qualities, look_ahead):
+def fetch(anilist_username, blacklisted_qualities, look_ahead, aliases):
     download.open()
     entries = []
     for entry in _parse_anilist(_fetch_anilist(anilist_username)):
-        entry_aliases = config.ANILIST_TITLE_ALIASES[entry["title"]] if entry["title"] in config.ANILIST_TITLE_ALIASES else []
+        if entry["title"] not in aliases:
+            aliases[entry["title"]] = []
+        entry_aliases = aliases[entry["title"]]
         entries.extend(_parse_nyaa(entry, _fetch_nyaa(entry, entry_aliases), blacklisted_qualities, look_ahead))
     download.close()
     return entries

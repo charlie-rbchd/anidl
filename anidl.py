@@ -22,22 +22,35 @@ class AliasConfigWindow(wx.Frame):
         self.panel = wx.Panel(self)
         self.panel.SetBackgroundColour("#ffffff")
 
-        listCtrl = dv.DataViewListCtrl(self.panel, -1)
-        listCtrl.AppendTextColumn("Title", width=300)
-        listCtrl.AppendTextColumn("Alias", width=400, mode=dv.DATAVIEW_CELL_EDITABLE)
+        self.dataView = dv.DataViewListCtrl(self.panel, -1)
+        self.dataView.AppendTextColumn("Title", width=250)
+        self.dataView.AppendTextColumn("Alias", width=450, mode=dv.DATAVIEW_CELL_EDITABLE)
 
         # Event bindings
+        self.Bind(dv.EVT_DATAVIEW_ITEM_EDITING_DONE, self.OnAliasChange, self.dataView)
+        self.Bind(wx.EVT_SHOW, self.OnShow, self)
         self.Bind(wx.EVT_CLOSE, self.OnClose, self)
 
         # Elements sizing and positing
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(listCtrl, 1, wx.EXPAND | wx.ALL, 0)
+        sizer.Add(self.dataView, 1, wx.EXPAND | wx.ALL, 0)
 
         self.panel.SetSizer(sizer)
         self.panel.Layout()
 
         self.SetIcon(wx.Icon("anidl.exe" if os.path.exists("anidl.exe") else "anidl.ico", wx.BITMAP_TYPE_ICO))
-        # self.Show(True)
+
+    def OnAliasChange(self, evt):
+        # TODO: Update the aliases user config.
+        # TODO: Separate multiple values with semi-colons.
+        pass
+
+    def OnShow(self, evt):
+        if evt.GetShow():
+            for title, alias in self.GetParent().userConfig["aliases"].items():
+                self.dataView.AppendItem([title, "; ".join(alias)])
+        else:
+            self.dataView.DeleteAllItems()
 
     def OnClose(self, evt):
         self.Show(False)
@@ -49,6 +62,9 @@ class MainWindow(wx.Frame):
 
         # Open config file
         self.userConfig = shelve.open("config", writeback=True)
+
+        if "aliases" not in self.userConfig:
+            self.userConfig["aliases"] = {}
 
         # Elements creation
         self.panel = wx.Panel(self)
@@ -168,7 +184,8 @@ class MainWindow(wx.Frame):
         startWorker(self.OnDataFetched, self.FetchDataWorker, wargs=(
             self.listUrlTextInput.GetLineText(0),
             unselectedQualities,
-            int(self.comboBox.GetSelection()) + 1))
+            int(self.comboBox.GetSelection()) + 1,
+            self.userConfig["aliases"]))
 
         # Progress Dialog
         self.progressComplete = False
@@ -187,8 +204,8 @@ class MainWindow(wx.Frame):
         self.progressDialog.Destroy()
         del self.progressComplete, self.progressDialog
 
-    def FetchDataWorker(self, anilist_username, blacklisted_qualities, look_ahead):
-        return scrape.fetch(anilist_username, blacklisted_qualities, look_ahead)
+    def FetchDataWorker(self, anilist_username, blacklisted_qualities, look_ahead, aliases):
+        return scrape.fetch(anilist_username, blacklisted_qualities, look_ahead, aliases)
 
     def OnDataFetched(self, result):
         try:
