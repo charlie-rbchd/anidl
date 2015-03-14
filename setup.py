@@ -4,7 +4,6 @@ from distutils.core import setup
 if sys.platform == "darwin":
     import py2app
 
-    dylib_excludes = []
     options = {"py2app": {"optimize": 2,
                           "dist_dir": "dist",
                           "xref": False,

@@ -281,8 +281,33 @@ class MainWindow(wx.Frame):
         self.Destroy()
 
 
+class AnidlApp(wx.App):
+    def __init__(self, *args, **kwargs):
+        wx.App.__init__(self, *args, **kwargs)
+
+        # Event bindings
+        self.Bind(wx.EVT_ACTIVATE_APP, self.OnActivate)
+
+    def OnInit(self):
+        anidl = MainWindow(None)
+        anidl.FetchData()
+        return True
+
+    def BringWindowToFront(self):
+        try:
+            self.GetTopWindow().Raise()
+        except:
+            pass
+
+    def OnActivate(self, evt):
+        if evt.GetActive():
+            self.BringWindowToFront()
+        evt.Skip()
+
+    def MacReopenApp(self):
+        self.BringWindowToFront()
+
+
 if __name__ == "__main__":
-    app = wx.App(False)
-    anidl = MainWindow(None)
-    anidl.FetchData()
+    app = AnidlApp(False)
     app.MainLoop()
