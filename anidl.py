@@ -224,7 +224,7 @@ class MainWindow(wx.Frame):
         try:
             self.checkListItems = result.get()
         except Exception as e:
-            print e
+            print type(e), e
             self.checkListItems = []
 
         if len(self.checkListItems) != 0:

@@ -40,9 +40,9 @@ def _fetch_anilist(anilist_username):
 def _parse_anilist(anilist_json):
     # Use a customly-defined list, fallback onto watching list if there is none.
     try:
-        list_index = anilist_json["custom_list_anime"].index("Anidl")
+        list_index = str(anilist_json["custom_list_anime"].index("Anidl"))
         list = anilist_json["custom_lists"][list_index]
-    except ValueError:
+    except KeyError:
         list = anilist_json["lists"]["watching"]
 
     pattern_ascii = re.compile("[^\x00-\x7F]+")
@@ -51,7 +51,10 @@ def _parse_anilist(anilist_json):
         new_entry = {}
         new_entry["title"] = re.sub(pattern_ascii, " ", entry["anime"]["title_romaji"]).strip() # Replace non-ASCII characters with spaces.
         new_entry["progress"] = int(entry["episodes_watched"]) + 1
-        new_entry["total_episodes"] = int(entry["anime"]["total_episodes"])
+        try:
+            new_entry["total_episodes"] = int(entry["anime"]["total_episodes"])
+        except TypeError:
+            new_entry["total_episodes"] = None
         entries.append(new_entry)
     return entries
 
@@ -86,7 +89,7 @@ def _parse_nyaa(anilist_entry, nyaa_pages, blacklisted_qualities, look_ahead):
 
             for i in range(look_ahead):
                 if ".mkv" in title\
-                    and (anilist_entry["total_episodes"] == 0 or anilist_entry["progress"] + i <= anilist_entry["total_episodes"])\
+                    and (not anilist_entry["total_episodes"] or anilist_entry["progress"] + i <= anilist_entry["total_episodes"])\
                     and not download.already({"title": anilist_entry["title"], "progress": anilist_entry["progress"] + i})\
                     and re.search(pattern_title[i], title_no_tags) != None\
                     and not any(quality in title for quality in blacklisted_qualities):
