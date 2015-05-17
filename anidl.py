@@ -2,17 +2,15 @@ import os
 import shelve
 import scrape
 import download
+import wx.dataview as dv
+
+from wx.lib.delayedresult import startWorker
 
 # Ignore wxWidgets/wxWidgets version mismatch warnings.
 import warnings
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import wx
-
-from wx.lib.delayedresult import startWorker
-import wx.dataview as dv
-import wx.lib.agw.pyprogress as pp
-
 
 class AliasConfigWindow(wx.Frame):
     def __init__(self, parent):
@@ -190,6 +188,7 @@ class MainWindow(wx.Frame):
 
     def FetchData(self):
         self.checkList.Clear()
+        self.checkListItems = []
 
         unselectedQualities = [self.listBoxItems[i] for i in range(
             len(self.listBoxItems)) if i not in self.listBox.GetSelections()]
@@ -201,38 +200,34 @@ class MainWindow(wx.Frame):
             self.userConfig["aliases"]))
 
         # Progress Dialog
-        self.progressComplete = False
-        self.progressDialog = pp.PyProgress(self, wx.ID_ANY, "Fetching data", "This may take a while...",
-                                            wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME)
-        self.progressDialog.SetGaugeProportion(0.33)
-        self.progressDialog.SetGaugeSteps(60)
-        self.progressDialog.SetSecondGradientColour("#19202c")
+        self.progress = 0
+        self.keepGoing = True
+        progressDialog = wx.ProgressDialog("Fetching data",
+                                           "This may take a while...",
+                                           parent=self,
+                                           style=wx.PD_APP_MODAL | wx.PD_CAN_ABORT | wx.PD_AUTO_HIDE)
 
-        keepGoing = True
-        while keepGoing and not self.progressComplete:
-            wx.MilliSleep(30)
-            keepGoing = self.progressDialog.UpdatePulse()
-
-        self.progressDialog.ReenableOtherWindows()
-        self.progressDialog.Destroy()
-        del self.progressComplete, self.progressDialog
+        while self.keepGoing and self.progress < 100:
+            wx.MilliSleep(250)
+            wx.Yield()
+            (self.keepGoing, skip) = progressDialog.Update(self.progress)
+        progressDialog.Destroy()
 
     def FetchDataWorker(self, anilist_username, blacklisted_qualities, look_ahead, aliases):
-        return scrape.fetch(anilist_username, blacklisted_qualities, look_ahead, aliases)
+        for (progress, entry) in scrape.fetch(anilist_username, blacklisted_qualities, look_ahead, aliases):
+            self.progress = progress
+            self.checkListItems.extend(entry)
+
+            if not self.keepGoing:
+                return False
+        return True
 
     def OnDataFetched(self, result):
-        try:
-            self.checkListItems = result.get()
-        except Exception as e:
-            print type(e), e
-            self.checkListItems = []
-
-        if len(self.checkListItems) != 0:
-            self.checkList.InsertItems([entry["name"] for entry in self.checkListItems], 0)
-            self.SelectAll()
-
-        self.progressComplete = True
-        self.checkList.SetFocus()
+        if result.get():
+            if len(self.checkListItems):
+                self.checkList.InsertItems([entry["name"] for entry in self.checkListItems], 0)
+                self.SelectAll()
+                self.checkList.SetFocus()
 
     def OnRefresh(self, evt):
         self.FetchData()
@@ -279,7 +274,6 @@ class MainWindow(wx.Frame):
     def OnClose(self, evt):
         self.userConfig.close()
         self.Destroy()
-
 
 class AnidlApp(wx.App):
     def __init__(self, *args, **kwargs):

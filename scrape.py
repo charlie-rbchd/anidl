@@ -98,12 +98,19 @@ def _parse_nyaa(anilist_entry, nyaa_pages, blacklisted_qualities, look_ahead):
     return entries
 
 def fetch(anilist_username, blacklisted_qualities, look_ahead, aliases):
+    anilist_entries = _parse_anilist(_fetch_anilist(anilist_username))
+
+    progress = 0
+    max_progress = len(anilist_entries)
+
     download.open()
-    entries = []
-    for entry in _parse_anilist(_fetch_anilist(anilist_username)):
+    for entry in anilist_entries:
         if entry["title"] not in aliases:
             aliases[entry["title"]] = []
         entry_aliases = aliases[entry["title"]]
-        entries.extend(_parse_nyaa(entry, _fetch_nyaa(entry, entry_aliases), blacklisted_qualities, look_ahead))
-    download.close()
-    return entries
+
+        nyaa_entry = _parse_nyaa(entry, _fetch_nyaa(entry, entry_aliases), blacklisted_qualities, look_ahead)
+        progress += 1
+        if progress == max_progress:
+            download.close()
+        yield (int(float(progress) / float(max_progress) * 100), nyaa_entry)
